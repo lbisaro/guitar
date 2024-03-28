@@ -1,0 +1,5 @@
+assets/sounds/*
+.idea/
+node_modules/
+test.html
+test.js
