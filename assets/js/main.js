@@ -7,7 +7,7 @@ chordsNeck.initParams({
   myContainer: 'chords-container',
   rootNote: 'C',
   showInitialChord: true,
-  showFretRangeSelectors: true,
+  showFretRangeSelectors: false,
   showResetLink: true,
   showNeckStyleSelectors: false,
   showScaleOnlyLink: true,
@@ -23,6 +23,8 @@ chordsNeck.initParams({
 chordsNeck.initLayout();
 chordsNeck.initActions();
 
+
+/*
 scalesNeck.initParams({
   myContainer: 'scales-container',
   rootNote: 'C',
@@ -42,3 +44,4 @@ scalesNeck.initParams({
 });
 scalesNeck.initLayout();
 scalesNeck.initActions();
+*/
