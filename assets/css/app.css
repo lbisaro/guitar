@@ -1,0 +1,379 @@
+/* App Styles: Guitar Fretboard */
+
+body {
+  background-color: #121316;
+  color: #e2e8f0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  min-width: 320px;
+}
+
+/* Fretboard Container & Scrolling */
+.fretboard-wrapper {
+  background: #1a1b20;
+  border-radius: 8px;
+  border: 1px solid #2d3139;
+  padding: 18px 12px 10px 12px;
+  overflow-x: auto;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+.fretboard-canvas {
+  position: relative;
+  display: inline-block;
+  min-width: 1400px;
+  width: 100%;
+  user-select: none;
+}
+
+/* Fretboard markers (numbers & inlays) */
+.fret-numbers-row {
+  display: flex;
+  margin-left: 70px;
+  /* Space for string labels */
+  border-bottom: 2px solid #3a3f4b;
+  padding-bottom: 6px;
+  margin-bottom: 4px;
+}
+
+.fret-number-col {
+  flex: 1;
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #8b949e;
+}
+
+.fret-number-col.fret-0-header {
+  flex: 0 0 55px;
+  color: #58a6ff;
+}
+
+/* Fretboard grid */
+.fretboard-board {
+  position: relative;
+  background: linear-gradient(180deg, #232226 0%, #1a191c 50%, #232226 100%);
+  border-radius: 4px;
+  border-left: 8px solid #c9d1d9;
+  /* The Nut (Cejuela) */
+  border-right: 4px solid #30363d;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  margin-left: 70px;
+  overflow: hidden;
+}
+
+/* Inlay Fret Dots (Marcadores del diapasón) */
+.fret-inlay-container {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+  display: flex;
+}
+
+.fret-inlay-cell {
+  flex: 1;
+  position: relative;
+  height: 100%;
+}
+
+.fret-inlay-cell.fret-0-inlay {
+  flex: 0 0 55px;
+}
+
+.fret-dot {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 13px;
+  height: 13px;
+  background: rgba(220, 225, 235, 0.28);
+  border-radius: 50%;
+  box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.6);
+}
+
+.fret-double-dot-1 {
+  position: absolute;
+  top: 25%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 12px;
+  height: 12px;
+  background: rgba(220, 225, 235, 0.28);
+  border-radius: 50%;
+  box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.6);
+}
+
+.fret-double-dot-2 {
+  position: absolute;
+  top: 75%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 12px;
+  height: 12px;
+  background: rgba(220, 225, 235, 0.28);
+  border-radius: 50%;
+  box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.6);
+}
+
+/* Strings Row */
+.string-row {
+  position: relative;
+  display: flex;
+  height: 38px;
+  align-items: center;
+}
+
+/* String label at the left */
+.string-label {
+  position: absolute;
+  left: -70px;
+  width: 60px;
+  text-align: right;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #adb5bd;
+}
+
+/* The metal string line */
+.string-wire {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  background: linear-gradient(180deg, #d0d7de 0%, #8b949e 50%, #484f58 100%);
+  z-index: 1;
+  pointer-events: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+/* Calibres de cuerdas visuales */
+.string-wire-1 {
+  height: 1.5px;
+}
+
+.string-wire-2 {
+  height: 2.0px;
+}
+
+.string-wire-3 {
+  height: 2.5px;
+}
+
+.string-wire-4 {
+  height: 3.0px;
+}
+
+.string-wire-5 {
+  height: 3.5px;
+}
+
+.string-wire-6 {
+  height: 4.2px;
+}
+
+/* Fret cell for note badge */
+.fret-cell {
+  flex: 1;
+  height: 100%;
+  position: relative;
+  border-right: 2px solid #57606a;
+  /* Fret wire */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+
+.fret-cell.fret-0 {
+  flex: 0 0 55px;
+  border-right: 5px solid #e1e4e8;
+  /* Cejuela / Nut */
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* Note Badges */
+.note-badge {
+  position: relative;
+  z-index: 5;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 0.82rem;
+  padding: 0.28rem 0.45rem;
+  min-width: 32px;
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.7);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  cursor: pointer;
+}
+
+.note-badge:hover {
+  transform: scale(1.18);
+  z-index: 10;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.9);
+}
+
+/* Dimmed notes in chord mode */
+.note-badge.note-dimmed {
+  opacity: 0.22;
+  filter: grayscale(80%);
+}
+
+.note-badge.note-dimmed:hover {
+  opacity: 0.8;
+  filter: none;
+}
+
+/* Card custom dark headers */
+.card-header-custom {
+  background-color: #1e2025;
+  border-bottom: 1px solid #2d3139;
+  font-weight: 600;
+}
+
+/* Legend items */
+.legend-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  margin-right: 12px;
+  margin-bottom: 6px;
+}
+
+/* Colores de Tríada: Fondo blanco con color de texto diferenciado */
+.badge-triad-root {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  border: 1px solid #ffffff;
+  font-weight: 800;
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.45);
+}
+
+.badge-triad-third {
+  background-color: #ffffff !important;
+  color: #dc2626 !important;
+  /* Texto Rojo (3ra) */
+  border: 1.5px solid #ffffff;
+  font-weight: 800;
+  box-shadow: 0 0 6px rgba(220, 38, 38, 0.35);
+}
+
+.badge-triad-fifth {
+  background-color: #ffffff !important;
+  color: #06930b !important;
+  /* Texto Naranja (5ta) */
+  border: 1.5px solid #ffffff;
+  font-weight: 800;
+  box-shadow: 0 0 6px rgba(234, 88, 12, 0.35);
+}
+
+/* Alineación perfecta entre Grados del Acorde y Acordes Diatónicos */
+.chord-section-label {
+  height: 20px;
+  line-height: 20px;
+  margin-bottom: 0.5rem;
+}
+
+#chordButtonsContainer .chord-btn {
+  height: 33px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  box-sizing: border-box;
+}
+
+#chordButtonsContainer .chord-btn .badge {
+  font-size: 0.72rem;
+  padding: 0.22rem 0.4rem;
+  line-height: 1;
+}
+
+/* Botones individuales de intervalos (desagrupados) */
+.btn-interval {
+  min-width: 38px;
+  height: 33px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.85rem;
+  border-radius: 6px;
+  border: 1px solid #3a3f4b;
+  background-color: #1a1b20;
+  color: #6c757d;
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+  padding: 0 10px;
+  user-select: none;
+  box-sizing: border-box;
+}
+
+.btn-interval:hover {
+  border-color: #8b949e;
+  color: #adb5bd;
+}
+
+/* Colores exactos para cada botón de intervalo activo (:checked) */
+/* 1: Fondo blanco, texto negro */
+#int_1:checked + .btn-interval {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  border-color: #ffffff !important;
+  font-weight: 800;
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.45);
+}
+
+/* 3: Fondo blanco, texto rojo */
+#int_3:checked + .btn-interval {
+  background-color: #ffffff !important;
+  color: #dc2626 !important;
+  border-color: #ffffff !important;
+  font-weight: 800;
+  box-shadow: 0 0 8px rgba(220, 38, 38, 0.35);
+}
+
+/* 5: Fondo blanco, texto verde */
+#int_5:checked + .btn-interval {
+  background-color: #ffffff !important;
+  color: #06930b !important;
+  border-color: #ffffff !important;
+  font-weight: 800;
+  box-shadow: 0 0 8px rgba(6, 147, 11, 0.35);
+}
+
+/* 7: Bootstrap Info (Celeste) */
+#int_7:checked + .btn-interval {
+  background-color: #0dcaf0 !important;
+  color: #000000 !important;
+  border-color: #0dcaf0 !important;
+  box-shadow: 0 0 8px rgba(13, 202, 240, 0.35);
+}
+
+/* 9: Bootstrap Warning (Amarillo) */
+#int_9:checked + .btn-interval {
+  background-color: #ffc107 !important;
+  color: #000000 !important;
+  border-color: #ffc107 !important;
+  box-shadow: 0 0 8px rgba(255, 193, 7, 0.35);
+}
+
+/* 11: Bootstrap Primary (Azul) */
+#int_11:checked + .btn-interval {
+  background-color: #0d6efd !important;
+  color: #ffffff !important;
+  border-color: #0d6efd !important;
+  box-shadow: 0 0 8px rgba(13, 110, 253, 0.35);
+}
+
+/* 13: Bootstrap Success (Verde) */
+#int_13:checked + .btn-interval {
+  background-color: #198754 !important;
+  color: #ffffff !important;
+  border-color: #198754 !important;
+  box-shadow: 0 0 8px rgba(25, 135, 84, 0.35);
+}
