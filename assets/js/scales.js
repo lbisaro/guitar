@@ -64,7 +64,7 @@ const SCALES = [
     description: '<strong>Modo V de la Escala Mayor:</strong> 1 - 2 - 3 - 4 - 5 - 6 - b7. Modo mayor con 7ma menor, cuna del acorde de dominante (V7). Su sonoridad cálida, alegre y ligeramente desenfadada es la esencia armónica del Blues, Rock clásico, Folk y Country.'
   },
   {
-    name: 'Eolio',
+    name: 'Eolico',
     intervals: [0, 2, 3, 5, 7, 8, 10],
     group: 'Modos Griegos',
     description: '<strong>Modo VI de la Escala Mayor:</strong> 1 - 2 - b3 - 4 - 5 - b6 - b7. Corresponde a la escala menor natural. Su nota modal es la 6ta menor (b6), proporcionando un ambiente melancólico, solemne y épico, clásico en baladas de rock y música de cámara.'
