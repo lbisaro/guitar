@@ -157,23 +157,18 @@
             <span class="text-uppercase small tracking-wide text-light fw-bold">Configuración</span>
           </div>
           <div class="card-body py-3">
-            <div class="row g-3 align-items-center">
-
-              <!-- Afinación -->
-              <div class="col-12 col-md-6 col-lg-5">
-                <label for="fretboardTuning" class="form-label small fw-semibold text-secondary">Afinación:</label>
-                <select id="fretboardTuning" class="form-select form-select-sm border-secondary" disabled>
-                  <option value="standard" selected>Standard: E A D G B E (6 cuerdas)</option>
-                </select>
+            <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3">
+              <div class="text-secondary small">
+                💡 <em>Haz <strong>doble clic</strong> sobre cualquier nota en la columna <strong>Afinación</strong> del mástil para cambiar la afinación de esa cuerda.</em>
               </div>
-
-              <!-- Restaurar defaults -->
-              <div class="col-12 col-md-6 col-lg-7 text-md-end pt-2 pt-md-0">
+              <div class="d-flex flex-wrap gap-2">
+                <button id="btnResetTuning" type="button" class="btn btn-sm btn-outline-warning">
+                  ↺ Restaurar Afinación (E A D G B E)
+                </button>
                 <button id="btnResetConfig" type="button" class="btn btn-sm btn-outline-danger">
                   ↺ Restaurar Configuración
                 </button>
               </div>
-
             </div>
           </div>
         </div>

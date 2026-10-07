@@ -28,8 +28,7 @@ body {
 /* Fretboard markers (numbers & inlays) */
 .fret-numbers-row {
   display: flex;
-  margin-left: 70px;
-  /* Space for string labels */
+  margin-left: 0;
   border-bottom: 2px solid #3a3f4b;
   padding-bottom: 6px;
   margin-bottom: 4px;
@@ -43,6 +42,12 @@ body {
   color: #8b949e;
 }
 
+.fret-number-col.tuning-header-col {
+  flex: 0 0 85px;
+  color: #ffc107;
+  letter-spacing: 0.5px;
+}
+
 .fret-number-col.fret-0-header {
   flex: 0 0 55px;
   color: #58a6ff;
@@ -53,11 +58,10 @@ body {
   position: relative;
   background: linear-gradient(180deg, #232226 0%, #1a191c 50%, #232226 100%);
   border-radius: 4px;
-  border-left: 8px solid #c9d1d9;
-  /* The Nut (Cejuela) */
+  border-left: 3px solid #3a3f4b;
   border-right: 4px solid #30363d;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-  margin-left: 70px;
+  margin-left: 0;
   overflow: hidden;
 }
 
@@ -76,6 +80,10 @@ body {
   flex: 1;
   position: relative;
   height: 100%;
+}
+
+.fret-inlay-cell.tuning-inlay-cell {
+  flex: 0 0 85px;
 }
 
 .fret-inlay-cell.fret-0-inlay {
@@ -126,15 +134,72 @@ body {
   align-items: center;
 }
 
-/* String label at the left */
-.string-label {
-  position: absolute;
-  left: -70px;
-  width: 60px;
-  text-align: right;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: #adb5bd;
+/* Columna de Afinación */
+.tuning-cell {
+  flex: 0 0 85px;
+  height: 100%;
+  position: relative;
+  border-right: 2px solid #3a3f4b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  background: rgba(18, 19, 23, 0.95);
+  z-index: 2;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.15s ease;
+}
+
+.tuning-cell:hover {
+  background: rgba(35, 38, 48, 0.98);
+}
+
+.tuning-string-label {
+  position: relative;
+  z-index: 5;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #8b949e;
+  pointer-events: none;
+}
+
+.tuning-badge {
+  position: relative;
+  z-index: 5;
+  font-family: inherit;
+  font-weight: 800;
+  font-size: 0.82rem;
+  padding: 0.22rem 0.5rem;
+  min-width: 32px;
+  text-align: center;
+  background-color: #212529;
+  color: #0dcaf0;
+  border: 1.5px solid #0dcaf0;
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.8), 0 0 6px rgba(13, 202, 240, 0.2);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+  cursor: pointer;
+}
+
+.tuning-cell:hover .tuning-badge,
+.tuning-badge:hover {
+  transform: scale(1.12);
+  background-color: #0dcaf0;
+  color: #000000;
+  box-shadow: 0 0 10px rgba(13, 202, 240, 0.7);
+}
+
+/* Popover interactivo de Afinación */
+.tuning-popover {
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.85);
+  border-radius: 8px;
+  animation: fadeInTuning 0.15s ease-out;
+}
+
+@keyframes fadeInTuning {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* The metal string line */

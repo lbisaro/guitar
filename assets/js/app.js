@@ -189,17 +189,25 @@ $(function () {
   // Estructura completa de escalas compiladas a partir de SCALES (definido en scales.js)
   const SCALES_FULL = compileScales(window.SCALES || []);
 
-  // Afinación Standard:
-  // Cuerdas 1 a 6 con notas al aire
-  // cuerda 1 = Mi agudo (E4), cuerda 6 = Mi grave (E2)
-  const TUNING_STANDARD = [
-    { stringNumber: 1, name: '1 (E)', rootNote: 'E', semitone: 4 },  // E
-    { stringNumber: 2, name: '2 (B)', rootNote: 'B', semitone: 11 }, // B
-    { stringNumber: 3, name: '3 (G)', rootNote: 'G', semitone: 7 },  // G
-    { stringNumber: 4, name: '4 (D)', rootNote: 'D', semitone: 2 },  // D
-    { stringNumber: 5, name: '5 (A)', rootNote: 'A', semitone: 9 },  // A
-    { stringNumber: 6, name: '6 (E)', rootNote: 'E', semitone: 4 }   // E
+  // Afinación Standard: Cuerda 6 (Mi grave) a Cuerda 1 (Mi agudo)
+  const DEFAULT_STRINGS_TUNING = [
+    { stringNumber: 6, rootNote: 'E', semitone: 4 }, // Mi grave
+    { stringNumber: 5, rootNote: 'A', semitone: 9 }, // La
+    { stringNumber: 4, rootNote: 'D', semitone: 2 }, // Re
+    { stringNumber: 3, rootNote: 'G', semitone: 7 }, // Sol
+    { stringNumber: 2, rootNote: 'B', semitone: 11 }, // Si
+    { stringNumber: 1, rootNote: 'E', semitone: 4 }  // Mi agudo
   ];
+
+  // Orden de cuerdas de arriba a abajo: la cuerda más grave (6) arriba
+  const STRING_ORDER = [6, 5, 4, 3, 2, 1];
+
+  // Opciones de notas para el selector interactivo de afinación
+  const TUNING_NOTE_OPTIONS = {
+    naturals: ['C', 'D', 'E', 'F', 'G', 'A', 'B'],
+    flats: ['Db', 'Eb', 'Gb', 'Ab', 'Bb'],
+    sharps: ['C#', 'D#', 'F#', 'G#', 'A#']
+  };
 
   // Definición universal de intervalos en terceras y sus colores asociados
   const INTERVAL_DEFS = [
@@ -222,7 +230,7 @@ $(function () {
     selectedChordIndex: 0, // 0..6
     selectedIntervals: ['1', '3', '5'], // Default: 1, 3, 5 independientes
     badgeContent: 'note',  // 'note' | 'interval'
-    tuning: 'standard'
+    stringsTuning: JSON.parse(JSON.stringify(DEFAULT_STRINGS_TUNING))
   };
 
   // Cargar estado guardado o usar el default
@@ -255,12 +263,22 @@ $(function () {
           );
           parsed.scaleType = matched || Object.keys(SCALES_FULL)[0] || 'mayor';
         }
+        // Validar y migrar afinación de cuerdas si es necesario
+        if (!parsed.stringsTuning || !Array.isArray(parsed.stringsTuning) || parsed.stringsTuning.length !== 6) {
+          parsed.stringsTuning = JSON.parse(JSON.stringify(DEFAULT_STRINGS_TUNING));
+        } else {
+          parsed.stringsTuning.forEach(st => {
+            if (st.semitone === undefined || st.semitone === null) {
+              st.semitone = NOTE_SEMITONES[st.rootNote] !== undefined ? NOTE_SEMITONES[st.rootNote] : 0;
+            }
+          });
+        }
         return Object.assign({}, defaultState, parsed);
       }
     } catch (e) {
       console.warn('Error al leer de localStorage', e);
     }
-    return Object.assign({}, defaultState);
+    return JSON.parse(JSON.stringify(defaultState));
   }
 
   // Obtiene notas de la escala para la tónica actual
@@ -432,6 +450,7 @@ $(function () {
 
     // 1. Fila de números de trastes
     let numbersRowHtml = '<div class="fret-numbers-row">';
+    numbersRowHtml += '<div class="fret-number-col tuning-header-col">Afinación</div>';
     for (let f = 0; f <= TOTAL_FRETS; f++) {
       const colClass = (f === 0) ? 'fret-number-col fret-0-header' : 'fret-number-col';
       const label = (f === 0) ? 'Nut (0)' : f;
@@ -444,6 +463,7 @@ $(function () {
 
     // 2.1 Marcadores de posición / Inlays
     boardHtml += '<div class="fret-inlay-container">';
+    boardHtml += '<div class="fret-inlay-cell tuning-inlay-cell"></div>';
     for (let f = 0; f <= TOTAL_FRETS; f++) {
       const cellClass = (f === 0) ? 'fret-inlay-cell fret-0-inlay' : 'fret-inlay-cell';
       let dotHtml = '';
@@ -457,13 +477,15 @@ $(function () {
     boardHtml += '</div>';
 
     // 2.2 Filas de cuerdas:
-    // REQUISITO EXPLÍCITO: "la cuerda mas grave se debe graficar debajo, y hacia arriba ir graficando el resto de las cuerdas hasta llegar a la cuerda mas aguda"
-    // Cuerda 1 (Mi agudo) arriba, cuerda 6 (Mi grave) abajo.
-    for (let s = 1; s <= 6; s++) {
-      const stringObj = TUNING_STANDARD.find(item => item.stringNumber === s);
+    // La cuerda más grave (6) arriba, hasta la más aguda (1) abajo.
+    STRING_ORDER.forEach(s => {
+      const stringObj = appState.stringsTuning.find(item => item.stringNumber === s);
       boardHtml += `
         <div class="string-row">
-          <div class="string-label">${stringObj.name}</div>
+          <div class="tuning-cell" data-string="${s}" title="Doble clic para afinar cuerda ${s} (${stringObj.rootNote})">
+            <span class="tuning-string-label">${s}ª</span>
+            <span class="badge tuning-badge" data-string="${s}">${stringObj.rootNote}</span>
+          </div>
           <div class="string-wire string-wire-${s}"></div>
       `;
 
@@ -514,7 +536,7 @@ $(function () {
       }
 
       boardHtml += '</div>'; // Fin string-row
-    }
+    });
 
     boardHtml += '</div>'; // Fin fretboard-board
 
@@ -523,6 +545,131 @@ $(function () {
 
     // Actualizar leyenda / información del título
     updateHeaderInfo();
+  }
+
+  // Actualiza la afinación de una cuerda individual
+  function updateStringTuning(stringNumber, newNote) {
+    const semitone = NOTE_SEMITONES[newNote];
+    if (semitone === undefined) return;
+
+    const strObj = appState.stringsTuning.find(s => s.stringNumber === stringNumber);
+    if (strObj) {
+      strObj.rootNote = newNote;
+      strObj.semitone = semitone;
+      saveState();
+      renderFretboard();
+    }
+  }
+
+  // Restaura la afinación estándar (E A D G B E)
+  function resetTuning() {
+    appState.stringsTuning = JSON.parse(JSON.stringify(DEFAULT_STRINGS_TUNING));
+    saveState();
+    renderFretboard();
+  }
+
+  // Popover interactivo para seleccionar la nota de afinación
+  function openTuningPicker(stringNum, $targetElement) {
+    closeTuningPicker();
+
+    const currentString = appState.stringsTuning.find(s => s.stringNumber === stringNum);
+    if (!currentString) return;
+
+    const currentNote = currentString.rootNote;
+
+    const $picker = $(`
+      <div id="tuningPickerPopover" class="tuning-popover card border-info shadow-lg">
+        <div class="card-header py-1 px-2 d-flex justify-content-between align-items-center bg-dark border-secondary">
+          <span class="small fw-bold text-info">Afinar Cuerda ${stringNum}ª (${currentNote})</span>
+          <button type="button" class="btn-close btn-close-white btn-sm" id="btnCloseTuningPicker" aria-label="Cerrar"></button>
+        </div>
+        <div class="card-body p-2 bg-dark">
+          <div class="mb-2">
+            <div class="text-secondary small fw-bold mb-1" style="font-size: 0.68rem; letter-spacing: 0.5px;">NATURALES</div>
+            <div class="d-flex flex-wrap gap-1">
+              ${TUNING_NOTE_OPTIONS.naturals.map(note => `
+                <button type="button" class="btn btn-sm ${note === currentNote ? 'btn-info fw-bold' : 'btn-outline-secondary text-light'} py-0 px-2 btn-pick-note" data-note="${note}">
+                  ${note}
+                </button>
+              `).join('')}
+            </div>
+          </div>
+          <div class="mb-2">
+            <div class="text-secondary small fw-bold mb-1" style="font-size: 0.68rem; letter-spacing: 0.5px;">BEMOLES (b)</div>
+            <div class="d-flex flex-wrap gap-1">
+              ${TUNING_NOTE_OPTIONS.flats.map(note => `
+                <button type="button" class="btn btn-sm ${note === currentNote ? 'btn-info fw-bold' : 'btn-outline-secondary text-light'} py-0 px-2 btn-pick-note" data-note="${note}">
+                  ${note}
+                </button>
+              `).join('')}
+            </div>
+          </div>
+          <div>
+            <div class="text-secondary small fw-bold mb-1" style="font-size: 0.68rem; letter-spacing: 0.5px;">SOSTENIDOS (#)</div>
+            <div class="d-flex flex-wrap gap-1">
+              ${TUNING_NOTE_OPTIONS.sharps.map(note => `
+                <button type="button" class="btn btn-sm ${note === currentNote ? 'btn-info fw-bold' : 'btn-outline-secondary text-light'} py-0 px-2 btn-pick-note" data-note="${note}">
+                  ${note}
+                </button>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      </div>
+    `);
+
+    $('body').append($picker);
+
+    const rect = $targetElement[0].getBoundingClientRect();
+    const pickerWidth = 265;
+    const pickerHeight = 220;
+
+    let top = rect.top - 8;
+    let left = rect.right + 10;
+
+    if (left + pickerWidth > window.innerWidth) {
+      left = Math.max(10, rect.left - pickerWidth - 10);
+    }
+    if (top + pickerHeight > window.innerHeight) {
+      top = Math.max(10, window.innerHeight - pickerHeight - 10);
+    }
+
+    $picker.css({
+      position: 'fixed',
+      top: `${Math.max(10, top)}px`,
+      left: `${left}px`,
+      width: `${pickerWidth}px`,
+      zIndex: 1060
+    });
+
+    $picker.on('click', '.btn-pick-note', function (e) {
+      e.stopPropagation();
+      const newNote = $(this).data('note');
+      updateStringTuning(stringNum, newNote);
+      closeTuningPicker();
+    });
+
+    $picker.on('click', '#btnCloseTuningPicker', function (e) {
+      e.stopPropagation();
+      closeTuningPicker();
+    });
+
+    setTimeout(() => {
+      $(document).on('click.tuningPicker', function (e) {
+        if (!$(e.target).closest('#tuningPickerPopover').length) {
+          closeTuningPicker();
+        }
+      });
+      $(document).on('keydown.tuningPicker', function (e) {
+        if (e.key === 'Escape') closeTuningPicker();
+      });
+    }, 50);
+  }
+
+  function closeTuningPicker() {
+    $('#tuningPickerPopover').remove();
+    $(document).off('click.tuningPicker');
+    $(document).off('keydown.tuningPicker');
   }
 
   // Actualiza la barra descriptiva sobre el mástil
@@ -645,9 +792,21 @@ $(function () {
     renderFretboard();
   });
 
-  // Resetear configuración a valores por defecto
+  // Doble clic sobre la nota de una cuerda para abrir el selector gráfico de afinación
+  $('#fretboardCanvas').on('dblclick', '.tuning-cell, .tuning-badge', function (e) {
+    e.stopPropagation();
+    const stringNum = parseInt($(this).closest('.tuning-cell').data('string'), 10);
+    openTuningPicker(stringNum, $(this).closest('.tuning-cell'));
+  });
+
+  // Restaurar solo la afinación estándar (E A D G B E)
+  $('#btnResetTuning').on('click', function () {
+    resetTuning();
+  });
+
+  // Resetear configuración completa a valores por defecto
   $('#btnResetConfig').on('click', function () {
-    appState = Object.assign({}, defaultState);
+    appState = JSON.parse(JSON.stringify(defaultState));
     saveState();
     initControls();
     renderFretboard();
