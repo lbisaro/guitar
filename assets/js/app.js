@@ -480,11 +480,18 @@ $(function () {
     // La cuerda más grave (6) arriba, hasta la más aguda (1) abajo.
     STRING_ORDER.forEach(s => {
       const stringObj = appState.stringsTuning.find(item => item.stringNumber === s);
+      const defaultStrObj = DEFAULT_STRINGS_TUNING.find(item => item.stringNumber === s);
+      const isCustomTuning = defaultStrObj && stringObj.rootNote !== defaultStrObj.rootNote;
+      const customClass = isCustomTuning ? ' tuning-badge-custom' : '';
+      const tooltipTitle = isCustomTuning
+        ? `Cuerda ${s}: ${stringObj.rootNote} (Modificada - Estándar: ${defaultStrObj.rootNote}) | Doble clic para cambiar`
+        : `Doble clic para afinar cuerda ${s} (${stringObj.rootNote})`;
+
       boardHtml += `
         <div class="string-row">
-          <div class="tuning-cell" data-string="${s}" title="Doble clic para afinar cuerda ${s} (${stringObj.rootNote})">
+          <div class="tuning-cell" data-string="${s}" title="${tooltipTitle}">
             <span class="tuning-string-label">${s}ª</span>
-            <span class="badge tuning-badge" data-string="${s}">${stringObj.rootNote}</span>
+            <span class="badge tuning-badge${customClass}" data-string="${s}">${stringObj.rootNote}</span>
           </div>
           <div class="string-wire string-wire-${s}"></div>
       `;
@@ -575,12 +582,18 @@ $(function () {
     const currentString = appState.stringsTuning.find(s => s.stringNumber === stringNum);
     if (!currentString) return;
 
+    const defaultString = DEFAULT_STRINGS_TUNING.find(s => s.stringNumber === stringNum);
     const currentNote = currentString.rootNote;
+    const isCustom = defaultString && currentNote !== defaultString.rootNote;
+    const headerColor = isCustom ? 'text-danger' : 'text-info';
+    const cardBorder = isCustom ? 'border-danger' : 'border-info';
+    const activeBtnClass = isCustom ? 'btn-danger fw-bold' : 'btn-info fw-bold';
+    const statusText = isCustom ? ` (Modificada - Estándar: ${defaultString.rootNote})` : '';
 
     const $picker = $(`
-      <div id="tuningPickerPopover" class="tuning-popover card border-info shadow-lg">
+      <div id="tuningPickerPopover" class="tuning-popover card ${cardBorder} shadow-lg">
         <div class="card-header py-1 px-2 d-flex justify-content-between align-items-center bg-dark border-secondary">
-          <span class="small fw-bold text-info">Afinar Cuerda ${stringNum}ª (${currentNote})</span>
+          <span class="small fw-bold ${headerColor}">Afinar Cuerda ${stringNum}ª (${currentNote})${statusText}</span>
           <button type="button" class="btn-close btn-close-white btn-sm" id="btnCloseTuningPicker" aria-label="Cerrar"></button>
         </div>
         <div class="card-body p-2 bg-dark">
@@ -588,7 +601,7 @@ $(function () {
             <div class="text-secondary small fw-bold mb-1" style="font-size: 0.68rem; letter-spacing: 0.5px;">NATURALES</div>
             <div class="d-flex flex-wrap gap-1">
               ${TUNING_NOTE_OPTIONS.naturals.map(note => `
-                <button type="button" class="btn btn-sm ${note === currentNote ? 'btn-info fw-bold' : 'btn-outline-secondary text-light'} py-0 px-2 btn-pick-note" data-note="${note}">
+                <button type="button" class="btn btn-sm ${note === currentNote ? activeBtnClass : 'btn-outline-secondary text-light'} py-0 px-2 btn-pick-note" data-note="${note}">
                   ${note}
                 </button>
               `).join('')}
@@ -598,7 +611,7 @@ $(function () {
             <div class="text-secondary small fw-bold mb-1" style="font-size: 0.68rem; letter-spacing: 0.5px;">BEMOLES (b)</div>
             <div class="d-flex flex-wrap gap-1">
               ${TUNING_NOTE_OPTIONS.flats.map(note => `
-                <button type="button" class="btn btn-sm ${note === currentNote ? 'btn-info fw-bold' : 'btn-outline-secondary text-light'} py-0 px-2 btn-pick-note" data-note="${note}">
+                <button type="button" class="btn btn-sm ${note === currentNote ? activeBtnClass : 'btn-outline-secondary text-light'} py-0 px-2 btn-pick-note" data-note="${note}">
                   ${note}
                 </button>
               `).join('')}
@@ -608,7 +621,7 @@ $(function () {
             <div class="text-secondary small fw-bold mb-1" style="font-size: 0.68rem; letter-spacing: 0.5px;">SOSTENIDOS (#)</div>
             <div class="d-flex flex-wrap gap-1">
               ${TUNING_NOTE_OPTIONS.sharps.map(note => `
-                <button type="button" class="btn btn-sm ${note === currentNote ? 'btn-info fw-bold' : 'btn-outline-secondary text-light'} py-0 px-2 btn-pick-note" data-note="${note}">
+                <button type="button" class="btn btn-sm ${note === currentNote ? activeBtnClass : 'btn-outline-secondary text-light'} py-0 px-2 btn-pick-note" data-note="${note}">
                   ${note}
                 </button>
               `).join('')}

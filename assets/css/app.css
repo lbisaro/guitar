@@ -190,6 +190,20 @@ body {
   box-shadow: 0 0 10px rgba(13, 202, 240, 0.7);
 }
 
+/* Afinación fuera del estándar: rojo propio de Bootstrap danger (#dc3545) */
+.tuning-badge.tuning-badge-custom {
+  color: #dc3545;
+  border-color: #dc3545;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.8), 0 0 6px rgba(220, 53, 69, 0.25);
+}
+
+.tuning-cell:hover .tuning-badge.tuning-badge-custom,
+.tuning-badge.tuning-badge-custom:hover {
+  background-color: #dc3545;
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(220, 53, 69, 0.7);
+}
+
 /* Popover interactivo de Afinación */
 .tuning-popover {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.85);
