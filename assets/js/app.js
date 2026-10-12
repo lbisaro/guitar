@@ -212,13 +212,13 @@ $(function () {
 
   // Definición universal de intervalos en terceras y sus colores asociados
   const INTERVAL_DEFS = [
-    { interval: '1', step: 0, badgeColor: 'badge-triad-root' },
-    { interval: '3', step: 2, badgeColor: 'badge-triad-third' },
-    { interval: '5', step: 4, badgeColor: 'badge-triad-fifth' },
-    { interval: '7', step: 6, badgeColor: 'bg-info text-dark' },
-    { interval: '9', step: 1, badgeColor: 'bg-warning text-dark' },
-    { interval: '11', step: 3, badgeColor: 'bg-primary text-white' },
-    { interval: '13', step: 5, badgeColor: 'bg-success text-white' }
+    { interval: '1', step: 0, isCompound: false, badgeColor: 'badge-triad-root' },
+    { interval: '3', step: 2, isCompound: false, badgeColor: 'badge-triad-third' },
+    { interval: '5', step: 4, isCompound: false, badgeColor: 'badge-triad-fifth' },
+    { interval: '7', step: 6, isCompound: false, badgeColor: 'bg-info text-dark' },
+    { interval: '9', step: 1, isCompound: true, badgeColor: 'bg-warning text-dark' },
+    { interval: '11', step: 3, isCompound: true, badgeColor: 'bg-primary text-white' },
+    { interval: '13', step: 5, isCompound: true, badgeColor: 'bg-success text-white' }
   ];
 
   const TOTAL_FRETS = 24;
@@ -311,6 +311,57 @@ $(function () {
       return s1 === s2;
     }
     return false;
+  }
+
+  /**
+   * Obtiene la designación exacta del grado / intervalo con símbolos tipográficos (♭, ♯, maj7, etc.)
+   * @param {string} refNote - Nota de referencia (ej: fundamental del acorde o tónica de la escala)
+   * @param {string} targetNote - Nota objetivo a evaluar
+   * @param {boolean} isCompound - Si es true, representa grados en octava extendida (9, 11, 13)
+   */
+  function getIntervalDegreeName(refNote, targetNote, isCompound = false) {
+    if (!refNote || !targetNote) return '';
+    const refLetterIdx = LETTERS.indexOf(refNote[0]);
+    const targetLetterIdx = LETTERS.indexOf(targetNote[0]);
+    if (refLetterIdx === -1 || targetLetterIdx === -1) return '';
+
+    const diatonicStep = (targetLetterIdx - refLetterIdx + 7) % 7;
+    const refSemi = NOTE_SEMITONES[refNote];
+    const targetSemi = NOTE_SEMITONES[targetNote];
+    if (refSemi === undefined || targetSemi === undefined) return '';
+
+    const actualSemis = (targetSemi - refSemi + 12) % 12;
+    // Semitonos diatónicos mayores/justos estándar para cada paso (0..6)
+    const standardSemis = [0, 2, 4, 5, 7, 9, 11][diatonicStep];
+
+    let diff = actualSemis - standardSemis;
+    if (diff > 6) diff -= 12;
+    if (diff < -6) diff += 12;
+
+    let acc = '';
+    if (diff === -1) acc = '\u266D';        // ♭
+    else if (diff === -2) acc = '\u266D\u266D'; // ♭♭
+    else if (diff === 1) acc = '\u266F';       // ♯
+    else if (diff === 2) acc = '\u266F\u266F'; // ♯♯
+
+    let num = (diatonicStep + 1);
+    if (isCompound) {
+      if (num === 2) num = 9;
+      else if (num === 4) num = 11;
+      else if (num === 6) num = 13;
+    }
+
+    // Séptima mayor: visualización solicitada como "maj7"
+    if (num === 7 && diff === 0) {
+      return 'maj7';
+    }
+
+    // Séptima disminuida: visualización solicitada como "7dim"
+    if (num === 7 && diff === -2) {
+      return '7dim';
+    }
+
+    return `${acc}${num}`;
   }
 
   // Calcula la nota para una cuerda y traste dados
@@ -440,14 +491,17 @@ $(function () {
     let chordNotesInfo = [];
     if (appState.displayMode === 'chord') {
       const chordRootIdx = appState.selectedChordIndex;
+      const chordRootNote = scaleNotes[chordRootIdx];
 
       INTERVAL_DEFS.forEach(def => {
         if (appState.selectedIntervals.includes(def.interval)) {
           const noteIdxInScale = (chordRootIdx + def.step) % 7;
           const noteName = scaleNotes[noteIdxInScale];
+          const degreeName = getIntervalDegreeName(chordRootNote, noteName, def.isCompound);
           chordNotesInfo.push({
             note: noteName,
             intervalNumber: def.interval,
+            degreeName: degreeName,
             badgeColor: def.badgeColor
           });
         }
@@ -533,30 +587,24 @@ $(function () {
             const isRoot = areNotesEnharmonic(note, appState.rootNote);
             const badgeBg = isRoot ? 'badge-triad-root' : 'bg-secondary';
 
-            let displayText = note;
-            if (appState.badgeContent === 'interval') {
-              const scaleIdx = scaleNotes.findIndex(sn => areNotesEnharmonic(sn, note));
-              displayText = (scaleIdx !== -1) ? (scaleIdx + 1).toString() : note;
-            }
-            badgeHtml = `<span class="badge ${badgeBg} note-badge" title="${note} | Clic para alternar Nota/Grado">${displayText}</span>`;
+            const degreeName = getIntervalDegreeName(appState.rootNote, note, false);
+            let displayText = (appState.badgeContent === 'interval') ? degreeName : note;
+            let extraClass = (appState.badgeContent === 'interval') ? (' badge-degree' + (displayText.length >= 4 ? ' badge-degree-compact' : '')) : '';
+            badgeHtml = `<span class="badge ${badgeBg}${extraClass} note-badge" title="${note} (Grado: ${degreeName}) | Clic para alternar Nota/Grado">${displayText}</span>`;
           } else if (appState.displayMode === 'chord') {
             // Modo acordes
+            const chordRootNote = scaleNotes[appState.selectedChordIndex];
             const chordMatch = chordNotesInfo.find(cn => areNotesEnharmonic(cn.note, note));
             if (chordMatch) {
-              const displayText = (appState.badgeContent === 'interval') ? chordMatch.intervalNumber : note;
-              badgeHtml = `<span class="badge ${chordMatch.badgeColor} note-badge" title="${note} (Grado: ${chordMatch.intervalNumber}) | Clic para alternar Nota/Grado">${displayText}</span>`;
+              let displayText = (appState.badgeContent === 'interval') ? chordMatch.degreeName : note;
+              let extraClass = (appState.badgeContent === 'interval') ? (' badge-degree' + (displayText.length >= 4 ? ' badge-degree-compact' : '')) : '';
+              badgeHtml = `<span class="badge ${chordMatch.badgeColor}${extraClass} note-badge" title="${note} (Grado: ${chordMatch.degreeName}) | Clic para alternar Nota/Grado">${displayText}</span>`;
             } else {
               // Nota de la escala pero no del acorde activo -> Atenuada
-              let displayText = note;
-              if (appState.badgeContent === 'interval') {
-                const chordRootIdx = appState.selectedChordIndex;
-                const scaleIdx = scaleNotes.findIndex(sn => areNotesEnharmonic(sn, note));
-                if (scaleIdx !== -1) {
-                  const diatonicStep = (scaleIdx - chordRootIdx + 7) % 7;
-                  displayText = (diatonicStep + 1).toString();
-                }
-              }
-              badgeHtml = `<span class="badge bg-secondary note-badge note-dimmed" title="${note} (En escala) | Clic para alternar Nota/Grado">${displayText}</span>`;
+              const dimDegree = getIntervalDegreeName(chordRootNote, note, false);
+              let displayText = (appState.badgeContent === 'interval') ? dimDegree : note;
+              let extraClass = (appState.badgeContent === 'interval') ? (' badge-degree' + (displayText.length >= 4 ? ' badge-degree-compact' : '')) : '';
+              badgeHtml = `<span class="badge bg-secondary${extraClass} note-badge note-dimmed" title="${note} (Grado: ${dimDegree}) | Clic para alternar Nota/Grado">${displayText}</span>`;
             }
           }
         }
@@ -719,7 +767,14 @@ $(function () {
       const rootOfChord = scaleNotes[appState.selectedChordIndex];
       const suffix = getChordSuffix(chordConfig, appState.selectedIntervals);
       const fullChordName = `${rootOfChord}${suffix}`;
-      const activeIntervalsText = appState.selectedIntervals.length ? appState.selectedIntervals.join(', ') : 'Ninguno';
+
+      const activeDegrees = INTERVAL_DEFS
+        .filter(def => appState.selectedIntervals.includes(def.interval))
+        .map(def => {
+          const noteIdx = (appState.selectedChordIndex + def.step) % 7;
+          return getIntervalDegreeName(rootOfChord, scaleNotes[noteIdx], def.isCompound);
+        });
+      const activeIntervalsText = activeDegrees.length ? activeDegrees.join(', ') : 'Ninguno';
 
       infoText += ` &nbsp;|&nbsp; Acorde: <span class="badge bg-primary fs-6">${fullChordName}</span> (Grado ${chordConfig.roman}) &nbsp; Intervalos: <span class="badge bg-dark border border-secondary">${activeIntervalsText}</span>`;
     }

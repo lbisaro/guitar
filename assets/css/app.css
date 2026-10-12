@@ -329,6 +329,26 @@ body {
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.9);
 }
 
+/* Grados (intervalos): sin bold pesado, tipografía limpia y equilibrada */
+.note-badge.badge-degree,
+.badge-triad-root.badge-degree,
+.badge-triad-third.badge-degree,
+.badge-triad-fifth.badge-degree {
+  font-weight: 500 !important;
+  font-size: 0.77rem;
+  letter-spacing: -0.2px;
+  padding: 0.26rem 0.36rem;
+  line-height: 1.15;
+}
+
+/* Grados con 4 o más caracteres (ej. maj7, ♭♭7, ♯11) */
+.note-badge.badge-degree.badge-degree-compact {
+  font-size: 0.69rem;
+  letter-spacing: -0.3px;
+  padding: 0.24rem 0.20rem;
+  min-width: 35px;
+}
+
 /* Dimmed notes in chord mode */
 .note-badge.note-dimmed {
   opacity: 0.22;
