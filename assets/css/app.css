@@ -510,3 +510,140 @@ body {
   border-color: #198754 !important;
   box-shadow: 0 0 8px rgba(25, 135, 84, 0.35);
 }
+
+/* Espacio en el body para que la barra inferior no tape el contenido */
+body {
+  padding-bottom: 80px;
+}
+
+/* Barra Fija Inferior (Backing Track Player Dock) */
+.backing-track-bar {
+  background: rgba(22, 24, 29, 0.94);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid #343a46;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.6);
+  z-index: 1030;
+}
+
+.backing-track-pulse {
+  animation: pulse-border 1.2s infinite alternate ease-in-out;
+}
+
+@keyframes pulse-border {
+  0% { box-shadow: 0 0 4px rgba(25, 135, 84, 0.4); }
+  100% { box-shadow: 0 0 14px rgba(25, 135, 84, 0.9); }
+}
+
+.chord-measure-box {
+  background: #1e222b;
+  border: 1px solid #3b4252;
+  border-radius: 6px;
+  padding: 8px 12px;
+  min-width: 90px;
+  text-align: center;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.chord-measure-box.active-measure {
+  border-color: #198754;
+  background: #143526;
+  box-shadow: 0 0 10px rgba(25, 135, 84, 0.5);
+  transform: translateY(-2px);
+}
+
+.chord-measure-box.editing-measure {
+  border-color: #0dcaf0;
+  background: #12303a;
+}
+
+.chord-measure-num {
+  font-size: 0.68rem;
+  color: #8b949e;
+  text-transform: uppercase;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.chord-measure-name {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.chord-measure-degree {
+  font-size: 0.72rem;
+  color: #0dcaf0;
+}
+
+/* Pastillas de la secuencia en la barra inferior fija */
+.bt-bar-sequence-container {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 50vw;
+  overflow-x: auto;
+  padding: 2px 4px;
+  scrollbar-width: none; /* Ocultar scrollbar estándar */
+}
+
+.bt-bar-sequence-container::-webkit-scrollbar {
+  display: none;
+}
+
+.bt-bar-measure-pill {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 8px;
+  background: #1b1e25;
+  border: 1px solid #373e4d;
+  border-radius: 6px;
+  min-width: 44px;
+  line-height: 1.1;
+  transition: all 0.15s ease-in-out;
+  user-select: none;
+}
+
+.bt-bar-measure-pill .pill-chord-name {
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: #e2e8f0;
+}
+
+.bt-bar-measure-pill .pill-chord-degree {
+  font-size: 0.65rem;
+  color: #8b949e;
+}
+
+/* Acorde activo en la barra durante la reproducción */
+.bt-bar-measure-pill.active-bar-measure {
+  background: #198754;
+  border-color: #20c997;
+  box-shadow: 0 0 10px rgba(25, 135, 84, 0.7);
+  transform: scale(1.08);
+}
+
+.bt-bar-measure-pill.active-bar-measure .pill-chord-name {
+  color: #ffffff;
+}
+
+.bt-bar-measure-pill.active-bar-measure .pill-chord-degree {
+  color: #d1e7dd;
+}
+
+/* Badge de cuenta previa en la barra inferior */
+.bt-bar-countin-badge {
+  font-weight: 700;
+  font-size: 0.8rem;
+  padding: 4px 8px;
+  border-radius: 6px;
+  animation: pulse-count 0.25s ease-in-out;
+}
+
+@keyframes pulse-count {
+  0% { transform: scale(0.9); }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}

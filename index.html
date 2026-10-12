@@ -32,10 +32,7 @@
     <div class="row g-3 mb-3">
       <div class="col-12">
         <div class="card border-secondary shadow-sm">
-          <div class="card-header card-header-custom py-2 d-flex justify-content-between align-items-center">
-            <span class="text-uppercase small tracking-wide text-info fw-bold">Opciones</span>
-            <span class="badge bg-secondary-subtle text-secondary-emphasis" id="fretboardInfoSummary"></span>
-          </div>
+
           <div class="card-body py-3">
             <div class="row g-3 align-items-end">
 
@@ -68,9 +65,10 @@
             </div>
 
             <!-- Descripción pedagógica de la Escala seleccionada -->
-            <div id="scaleDescriptionContainer" class="mt-3 pt-3 border-top border-secondary-subtle" style="display: none;">
-              <div class="alert alert-dark border-secondary-subtle bg-dark-subtle mb-0 py-2 px-3 small text-secondary-emphasis d-flex align-items-start gap-2">
-                <span class="text-info fs-6 lh-1 mt-1">ℹ️</span>
+            <div id="scaleDescriptionContainer" class="mt-3 pt-3 border-top border-secondary-subtle"
+              style="display: none;">
+              <div
+                class="alert alert-dark border-secondary-subtle bg-dark-subtle mb-0 py-2 small text-secondary-emphasis d-flex align-items-start gap-2">
                 <div id="scaleDescriptionText" class="text-light-emphasis small lh-sm"></div>
               </div>
             </div>
@@ -122,6 +120,9 @@
             </div>
 
           </div>
+          <div class="card-header card-header-custom py-2 d-flex ">
+            <span id="fretboardInfoSummary" class="badge text-secondary-emphasis"></span>
+          </div>
         </div>
       </div>
     </div>
@@ -130,10 +131,6 @@
     <div class="row g-3 mb-3">
       <div class="col-12">
         <div class="card border-secondary shadow-sm">
-          <div class="card-header card-header-custom py-2 d-flex justify-content-between align-items-center">
-            <span class="text-uppercase small tracking-wide text-warning fw-bold">Gráfica</span>
-
-          </div>
           <div class="card-body p-2 p-md-3">
 
             <!-- Contenedor del mástil con scroll horizontal -->
@@ -159,7 +156,8 @@
           <div class="card-body py-3">
             <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3">
               <div class="text-secondary small">
-                💡 <em>Haz <strong>doble clic</strong> sobre cualquier nota en la columna <strong>Afinación</strong> para cambiarla, o usa el botón <strong>▲/▼</strong> para invertir el orden de las cuerdas.</em>
+                <em>Haz <strong>doble clic</strong> sobre cualquier nota en la columna <strong>Afinación</strong> para
+                  cambiarla, o usa el botón <strong>▲/▼</strong> para invertir el orden de las cuerdas.</em>
               </div>
               <div class="d-flex flex-wrap gap-2">
                 <button id="btnResetTuning" type="button" class="btn btn-sm btn-outline-warning">
@@ -177,10 +175,165 @@
 
   </main>
 
+  <!-- Barra Fija Inferior: Backing Track Player Dock -->
+  <div id="backingTrackPlayerBar" class="backing-track-bar fixed-bottom py-2 px-3">
+    <div class="container-fluid d-flex flex-wrap align-items-center justify-content-between gap-2">
+
+      <!-- Izquierda: Título y Visualizador de la Secuencia Completa -->
+      <div class="d-flex align-items-center gap-2">
+        <span class="fw-bold text-success d-none d-sm-inline">Backing Track</span>
+        
+        <!-- Indicador de cuenta previa cuando aplica -->
+        <div id="btBarCountInBadge" class="badge bg-warning text-dark bt-bar-countin-badge" style="display: none;">
+          Intro 1/4
+        </div>
+
+        <!-- Contenedor con todos los compases de la progresión -->
+        <div id="btBarSequenceContainer" class="bt-bar-sequence-container bg-dark px-2 py-1 rounded border border-secondary">
+          <!-- Se genera dinámicamente -->
+        </div>
+      </div>
+
+      <!-- Centro: Controles de Transporte (Play/Stop Toggle, BPM) -->
+      <div class="d-flex align-items-center gap-2">
+        <button id="btnBtPlayToggle" class="btn btn-sm btn-success px-3 fw-bold d-flex align-items-center gap-1"
+          title="Reproducir en Loop">
+          <span id="btPlayIcon">▶</span>
+        </button>
+
+        <div class="d-flex align-items-center gap-1 ms-2">
+          <label for="btBpmInput" class="small text-secondary fw-semibold">BPM:</label>
+          <div class="input-group input-group-sm" style="width: 105px;">
+            <button class="btn btn-outline-secondary px-2" type="button" id="btnBtBpmMinus">-</button>
+            <input type="number" id="btBpmInput" class="form-control text-center px-1" value="100" min="40" max="240"
+              step="5">
+            <button class="btn btn-outline-secondary px-2" type="button" id="btnBtBpmPlus">+</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Derecha: Descargar MIDI y Abrir Configuración -->
+      <div class="d-flex align-items-center gap-2">
+        <button id="btnBtDownloadMidi" class="btn btn-sm btn-outline-info d-flex align-items-center gap-1"
+          title="Descargar archivo MIDI (.mid)">
+          <span class="d-none d-md-inline">Descargar .mid</span>
+        </button>
+        <button id="btnBtSettings"
+          class="btn btn-sm btn-outline-secondary px-2 d-flex align-items-center justify-content-center"
+          data-bs-toggle="modal" data-bs-target="#backingTrackModal" title="Configuración del Backing Track">
+          <span class="fs-6 lh-1">⚙️</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Modal de Configuración del Backing Track -->
+  <div class="modal fade" id="backingTrackModal" tabindex="-1" aria-labelledby="backingTrackModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content bg-dark border-secondary shadow">
+        <div class="modal-header border-secondary py-2">
+          <h5 class="modal-title fs-6 fw-bold text-light d-flex align-items-center gap-2" id="backingTrackModalLabel">
+            <span>⚙️ Configuración del Backing Track</span>
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body py-3">
+
+          <!-- Resumen de Tonalidad Actual -->
+          <div
+            class="alert alert-dark border-secondary-subtle py-2 px-3 d-flex justify-content-between align-items-center mb-3">
+            <div class="small">
+              <span class="text-secondary">Tonalidad / Escala actual:</span>
+              <strong class="text-info ms-1" id="btModalCurrentScaleText">C Mayor</strong>
+            </div>
+            <span class="badge bg-secondary-subtle text-secondary-emphasis small">Sincronizado con el
+              visualizador</span>
+          </div>
+
+          <!-- Presets Populares -->
+          <div class="mb-3">
+            <label class="form-label small fw-semibold text-secondary mb-1">Progresiones Populares (Presets):</label>
+            <div class="d-flex flex-wrap gap-2" id="btPresetButtons">
+              <button type="button" class="btn btn-outline-secondary btn-sm bt-preset-btn" data-preset="I-IV-V-I">I - IV
+                - V - I</button>
+              <button type="button" class="btn btn-outline-secondary btn-sm bt-preset-btn" data-preset="ii-V-I">ii - V -
+                I</button>
+              <button type="button" class="btn btn-outline-secondary btn-sm bt-preset-btn" data-preset="I-V-vi-IV">I - V
+                - vi - IV (Pop)</button>
+              <button type="button" class="btn btn-outline-secondary btn-sm bt-preset-btn" data-preset="I-IV-I-V">I - IV
+                - I - V (Blues)</button>
+              <button type="button" class="btn btn-outline-secondary btn-sm bt-preset-btn" data-preset="i-VI-III-VII">i
+                - VI - III - VII</button>
+            </div>
+          </div>
+
+          <!-- Secuencia de Compases Actual -->
+          <div class="mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <label class="form-label small fw-semibold text-secondary mb-0">Secuencia de Compases (Haz clic en un
+                compás para editarlo):</label>
+              <div class="btn-group btn-group-sm">
+                <button type="button" class="btn btn-outline-secondary" id="btnBtAddMeasure">+ Compás</button>
+                <button type="button" class="btn btn-outline-secondary" id="btnBtRemoveMeasure">- Compás</button>
+              </div>
+            </div>
+            <div id="btMeasuresContainer"
+              class="d-flex flex-wrap gap-2 p-2 rounded bg-black bg-opacity-25 border border-secondary-subtle">
+              <!-- Se genera dinámicamente -->
+            </div>
+          </div>
+
+          <!-- Grados Diatónicos para asignar al compás -->
+          <div class="mb-3">
+            <label class="form-label small fw-semibold text-secondary mb-1">Asignar grado al compás
+              seleccionado:</label>
+            <div id="btDegreeSelectorContainer" class="d-flex flex-wrap gap-2">
+              <!-- Se genera dinámicamente con los 7 grados de la escala actual -->
+            </div>
+          </div>
+
+          <!-- Parámetros de compás y tempo -->
+          <div class="row g-2 pt-2 border-top border-secondary-subtle">
+            <div class="col-6 col-sm-4">
+              <label for="btTimeSigSelect" class="form-label small fw-semibold text-secondary">Métrica:</label>
+              <select id="btTimeSigSelect" class="form-select form-select-sm border-secondary">
+                <option value="4/4" selected>4/4 (Estándar)</option>
+              </select>
+            </div>
+            <div class="col-6 col-sm-4">
+              <label for="btChordDurationSelect" class="form-label small fw-semibold text-secondary">Duración por
+                compás:</label>
+              <select id="btChordDurationSelect" class="form-select form-select-sm border-secondary">
+                <option value="4" selected>1 Acorde por compás (4 tiempos)</option>
+              </select>
+            </div>
+            <div class="col-12 col-sm-4">
+              <label class="form-label small fw-semibold text-secondary">Instrumentación MIDI:</label>
+              <div class="small text-secondary-emphasis lh-sm pt-1">
+                Chan 10: Hi-hat, Bombo, Redoblante<br>
+                Chan 1: Bajo<br>
+                Chan 2: Piano
+              </div>
+            </div>
+          </div>
+
+        </div>
+        <div class="modal-footer border-secondary py-2">
+          <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>
+          <button type="button" class="btn btn-sm btn-success" data-bs-dismiss="modal">Aplicar y Listo</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Scripts locales -->
   <script src="assets/js/jquery.min.js"></script>
   <script src="assets/js/bootstrap.bundle.min.js"></script>
   <script src="assets/js/scales.js"></script>
+  <script src="assets/js/midi-writer.js"></script>
+  <script src="assets/js/backing-track-player.js"></script>
   <script src="assets/js/app.js"></script>
 </body>
 

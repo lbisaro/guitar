@@ -232,7 +232,12 @@ $(function () {
     selectedIntervals: ['1', '3', '5'], // Default: 1, 3, 5 independientes
     badgeContent: 'note',  // 'note' | 'interval'
     stringsTuning: JSON.parse(JSON.stringify(DEFAULT_STRINGS_TUNING)),
-    stringOrder: 'desc'    // 'desc': 6ª arriba (default) | 'asc': 6ª abajo
+    stringOrder: 'desc',   // 'desc': 6ª arriba (default) | 'asc': 6ª abajo
+    backingTrack: {
+      bpm: 100,
+      measures: [0, 3, 4, 0], // I, IV, V, I (grados 0-indexed)
+      activeEditIndex: 0
+    }
   };
 
   // Cargar estado guardado o usar el default
@@ -278,6 +283,14 @@ $(function () {
         // Validar orden de cuerdas
         if (!parsed.stringOrder || (parsed.stringOrder !== 'desc' && parsed.stringOrder !== 'asc')) {
           parsed.stringOrder = 'desc';
+        }
+        // Validar backingTrack
+        if (!parsed.backingTrack || !Array.isArray(parsed.backingTrack.measures) || parsed.backingTrack.measures.length === 0) {
+          parsed.backingTrack = {
+            bpm: 100,
+            measures: [0, 3, 4, 0],
+            activeEditIndex: 0
+          };
         }
         return Object.assign({}, defaultState, parsed);
       }
@@ -915,7 +928,336 @@ $(function () {
     e.stopPropagation();
   });
 
+  // ==========================================
+  // --- MÓDULO BACKING TRACK ---
+  // ==========================================
+
+  /**
+   * Obtiene la lista de acordes estructurada para el Backing Track actual
+   */
+  function getBackingTrackChords() {
+    const scaleNotes = getCurrentScaleNotes();
+    const chordsConfig = SCALES_FULL[appState.scaleType].chords;
+
+    return appState.backingTrack.measures.map(degreeIdx => {
+      const safeIdx = (degreeIdx >= 0 && degreeIdx < 7) ? degreeIdx : 0;
+      const rootNote = scaleNotes[safeIdx];
+      const chordConfig = chordsConfig[safeIdx];
+      const suffix = getChordSuffix(chordConfig, appState.selectedIntervals);
+      const chordName = `${rootNote}${suffix}`;
+
+      // Semitono fundamental (0..11)
+      const rootSemi = NOTE_SEMITONES[rootNote] !== undefined ? NOTE_SEMITONES[rootNote] : 0;
+      // Convertir a número MIDI en octava 3 (C3 = 48)
+      const rootMidi = 48 + rootSemi;
+
+      // Calcular notas de la tríada/acorde en MIDI
+      const notesMidi = [];
+      const intervalDefsToUse = INTERVAL_DEFS.filter(d => appState.selectedIntervals.includes(d.interval));
+      const activeDefs = intervalDefsToUse.length > 0 ? intervalDefsToUse : [INTERVAL_DEFS[0], INTERVAL_DEFS[1], INTERVAL_DEFS[2]];
+
+      activeDefs.forEach(def => {
+        const noteStepIdx = (safeIdx + def.step) % 7;
+        const noteName = scaleNotes[noteStepIdx];
+        const semi = NOTE_SEMITONES[noteName] !== undefined ? NOTE_SEMITONES[noteName] : 0;
+        let midi = 48 + semi;
+        // Si el intervalo extendido o la nota es menor que la fundamental, subir octava
+        if (midi < rootMidi) midi += 12;
+        if (def.isCompound) midi += 12;
+        notesMidi.push(midi);
+      });
+
+      return {
+        degreeIndex: safeIdx,
+        roman: chordConfig.roman,
+        chordName: chordName,
+        rootMidi: rootMidi,
+        notesMidi: notesMidi,
+        durationBeats: 4
+      };
+    });
+  }
+
+  /**
+   * Renderiza las cajas de compases dentro del modal de configuración
+   */
+  function renderBackingTrackModal() {
+    const scaleObj = SCALES_FULL[appState.scaleType];
+    const scaleNotes = getCurrentScaleNotes();
+    const chordsConfig = scaleObj.chords;
+
+    // Actualizar texto de escala activa en el modal
+    $('#btModalCurrentScaleText').text(`${appState.rootNote} ${scaleObj.name} (${scaleNotes.join(' - ')})`);
+
+    // 1. Renderizar casillas de compases
+    const $measuresContainer = $('#btMeasuresContainer');
+    $measuresContainer.empty();
+
+    const trackChords = getBackingTrackChords();
+    trackChords.forEach((chord, idx) => {
+      const isEditing = (idx === appState.backingTrack.activeEditIndex);
+      const editClass = isEditing ? ' editing-measure' : '';
+
+      const measureHtml = `
+        <div class="chord-measure-box${editClass}" data-index="${idx}" style="cursor: pointer;">
+          <div class="chord-measure-num">Compás ${idx + 1}</div>
+          <div class="chord-measure-name">${chord.chordName}</div>
+          <div class="chord-measure-degree">${chord.roman}</div>
+        </div>
+      `;
+      $measuresContainer.append(measureHtml);
+    });
+
+    // 2. Renderizar los 7 botones de grados de la escala actual para asignar
+    const $degreeContainer = $('#btDegreeSelectorContainer');
+    $degreeContainer.empty();
+
+    chordsConfig.forEach((chordData, degIdx) => {
+      const rootOfChord = scaleNotes[degIdx];
+      const suffix = getChordSuffix(chordData, appState.selectedIntervals);
+      const chordName = `${rootOfChord}${suffix}`;
+
+      const btnHtml = `
+        <button type="button" class="btn btn-outline-info btn-sm bt-assign-degree-btn" data-degree="${degIdx}">
+          <span class="badge bg-dark me-1">${chordData.roman}</span>
+          <strong>${chordName}</strong>
+        </button>
+      `;
+      $degreeContainer.append(btnHtml);
+    });
+  }
+
+  /**
+   * Actualiza los elementos del reproductor en la barra inferior fija
+   */
+  function updateBackingTrackBarUI() {
+    $('#btBpmInput').val(appState.backingTrack.bpm);
+    const chords = getBackingTrackChords();
+
+    // Renderizar la secuencia completa de compases en la barra
+    const $container = $('#btBarSequenceContainer');
+    $container.empty();
+
+    chords.forEach((chord, idx) => {
+      const pillHtml = `
+        <div class="bt-bar-measure-pill" data-index="${idx}" title="Compás ${idx + 1}: ${chord.chordName} (${chord.roman})">
+          <span class="pill-chord-name">${chord.chordName}</span>
+          <span class="pill-chord-degree">${chord.roman}</span>
+        </div>
+      `;
+      $container.append(pillHtml);
+    });
+  }
+
+  // --- Handlers de Backing Track ---
+
+  // Iniciar reproducción
+  function startBackingTrackPlayback() {
+    const chords = getBackingTrackChords();
+    if (!chords || chords.length === 0) return;
+
+    window.BackingTrackPlayer.start({
+      bpm: appState.backingTrack.bpm,
+      chords: chords
+    }, function onStep(stepIdx, activeChord) {
+      if (activeChord.isCountIn) {
+        // Mostrar badge de cuenta previa (Intro 1/4, etc.)
+        $('#btBarCountInBadge').text(activeChord.chordName).show();
+        $('.bt-bar-measure-pill').removeClass('active-bar-measure');
+        $('.chord-measure-box').removeClass('active-measure');
+      } else {
+        // Ocultar cuenta previa si seguía visible
+        $('#btBarCountInBadge').hide();
+
+        // Resaltar el compás actual en la secuencia de la barra
+        $('.bt-bar-measure-pill').removeClass('active-bar-measure');
+        const $activePill = $(`.bt-bar-measure-pill[data-index="${stepIdx}"]`);
+        $activePill.addClass('active-bar-measure');
+
+        // Scroll automático si la secuencia es muy larga
+        if ($activePill.length) {
+          const container = document.getElementById('btBarSequenceContainer');
+          if (container) {
+            const pillEl = $activePill[0];
+            const scrollLeft = pillEl.offsetLeft - (container.clientWidth / 2) + (pillEl.clientWidth / 2);
+            container.scrollTo({ left: scrollLeft, behavior: 'smooth' });
+          }
+        }
+
+        // Iluminar compás activo si el modal está abierto
+        $('.chord-measure-box').removeClass('active-measure');
+        $(`.chord-measure-box[data-index="${stepIdx}"]`).addClass('active-measure');
+      }
+    });
+
+    // Actualizar estado del botón unificado (Stop)
+    $('#btnBtPlayToggle')
+      .removeClass('btn-success')
+      .addClass('btn-danger backing-track-pulse')
+      .attr('title', 'Detener');
+    $('#btPlayIcon').text('⏹');
+  }
+
+  // Detener reproducción
+  function stopBackingTrackPlayback() {
+    window.BackingTrackPlayer.stop();
+
+    // Actualizar estado del botón unificado (Play)
+    $('#btnBtPlayToggle')
+      .removeClass('btn-danger backing-track-pulse')
+      .addClass('btn-success')
+      .attr('title', 'Reproducir en Loop');
+    $('#btPlayIcon').text('▶');
+
+    $('#btBarCountInBadge').hide();
+    $('.bt-bar-measure-pill').removeClass('active-bar-measure');
+    $('.chord-measure-box').removeClass('active-measure');
+  }
+
+  // Alternar Play / Stop
+  $('#btnBtPlayToggle').on('click', function () {
+    if (window.BackingTrackPlayer.isPlaying()) {
+      stopBackingTrackPlayback();
+    } else {
+      startBackingTrackPlayback();
+    }
+  });
+
+  // Control de BPM
+  $('#btBpmInput').on('change', function () {
+    let val = parseInt($(this).val(), 10);
+    if (isNaN(val) || val < 40) val = 40;
+    if (val > 240) val = 240;
+    $(this).val(val);
+    appState.backingTrack.bpm = val;
+    saveState();
+    if (window.BackingTrackPlayer.isPlaying()) {
+      startBackingTrackPlayback(); // Reiniciar con nuevo tempo
+    }
+  });
+
+  $('#btnBtBpmMinus').on('click', function () {
+    let val = Math.max(40, (parseInt($('#btBpmInput').val(), 10) || 100) - 5);
+    $('#btBpmInput').val(val).trigger('change');
+  });
+
+  $('#btnBtBpmPlus').on('click', function () {
+    let val = Math.min(240, (parseInt($('#btBpmInput').val(), 10) || 100) + 5);
+    $('#btBpmInput').val(val).trigger('change');
+  });
+
+  // Descargar archivo MIDI nativo
+  $('#btnBtDownloadMidi').on('click', function () {
+    const chords = getBackingTrackChords();
+    const midiBytes = window.MidiWriter.buildBackingTrackMidi({
+      bpm: appState.backingTrack.bpm,
+      chords: chords,
+      timeSignatureNum: 4,
+      timeSignatureDen: 4
+    });
+
+    const blob = new Blob([midiBytes], { type: 'audio/midi' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `BackingTrack_${appState.rootNote}_${appState.scaleType}_${appState.backingTrack.bpm}BPM.mid`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
+  // Abrir Modal de Configuración
+  $('#backingTrackModal').on('show.bs.modal', function () {
+    renderBackingTrackModal();
+  });
+
+  // Seleccionar compás para editar en el modal
+  $('#btMeasuresContainer').on('click', '.chord-measure-box', function () {
+    const idx = parseInt($(this).data('index'), 10);
+    appState.backingTrack.activeEditIndex = idx;
+    $('.chord-measure-box').removeClass('editing-measure');
+    $(this).addClass('editing-measure');
+  });
+
+  // Asignar grado al compás seleccionado
+  $('#btDegreeSelectorContainer').on('click', '.bt-assign-degree-btn', function () {
+    const degree = parseInt($(this).data('degree'), 10);
+    const editIdx = appState.backingTrack.activeEditIndex;
+    if (editIdx >= 0 && editIdx < appState.backingTrack.measures.length) {
+      appState.backingTrack.measures[editIdx] = degree;
+      // Pasar automáticamente al siguiente compás para agilizar la carga
+      appState.backingTrack.activeEditIndex = (editIdx + 1) % appState.backingTrack.measures.length;
+      saveState();
+      renderBackingTrackModal();
+      updateBackingTrackBarUI();
+
+      if (window.BackingTrackPlayer.isPlaying()) {
+        startBackingTrackPlayback();
+      }
+    }
+  });
+
+  // Añadir compás
+  $('#btnBtAddMeasure').on('click', function () {
+    if (appState.backingTrack.measures.length < 16) {
+      appState.backingTrack.measures.push(0); // I por defecto
+      appState.backingTrack.activeEditIndex = appState.backingTrack.measures.length - 1;
+      saveState();
+      renderBackingTrackModal();
+      updateBackingTrackBarUI();
+    }
+  });
+
+  // Eliminar compás
+  $('#btnBtRemoveMeasure').on('click', function () {
+    if (appState.backingTrack.measures.length > 1) {
+      appState.backingTrack.measures.pop();
+      if (appState.backingTrack.activeEditIndex >= appState.backingTrack.measures.length) {
+        appState.backingTrack.activeEditIndex = appState.backingTrack.measures.length - 1;
+      }
+      saveState();
+      renderBackingTrackModal();
+      updateBackingTrackBarUI();
+    }
+  });
+
+  // Presets de Progresiones Populares
+  const BT_PRESETS = {
+    'I-IV-V-I': [0, 3, 4, 0],
+    'ii-V-I': [1, 4, 0],
+    'I-V-vi-IV': [0, 4, 5, 3],
+    'I-IV-I-V': [0, 3, 0, 4],
+    'i-VI-III-VII': [0, 5, 2, 6]
+  };
+
+  $('#btPresetButtons').on('click', '.bt-preset-btn', function () {
+    const presetKey = $(this).data('preset');
+    if (BT_PRESETS[presetKey]) {
+      appState.backingTrack.measures = [...BT_PRESETS[presetKey]];
+      appState.backingTrack.activeEditIndex = 0;
+      saveState();
+      renderBackingTrackModal();
+      updateBackingTrackBarUI();
+
+      if (window.BackingTrackPlayer.isPlaying()) {
+        startBackingTrackPlayback();
+      }
+    }
+  });
+
+  // Actualizar Backing Track cuando cambia la Tónica o Escala en la página principal
+  const originalRenderChordButtons = renderChordButtons;
+  renderChordButtons = function () {
+    originalRenderChordButtons();
+    updateBackingTrackBarUI();
+    if ($('#backingTrackModal').hasClass('show')) {
+      renderBackingTrackModal();
+    }
+  };
+
   // Inicialización de la aplicación
   initControls();
   renderFretboard();
+  updateBackingTrackBarUI();
 });
