@@ -199,8 +199,9 @@ $(function () {
     { stringNumber: 1, rootNote: 'E', semitone: 4 }  // Mi agudo
   ];
 
-  // Orden de cuerdas de arriba a abajo: la cuerda más grave (6) arriba
-  const STRING_ORDER = [6, 5, 4, 3, 2, 1];
+  // Orden de cuerdas de arriba a abajo
+  const STRING_ORDER_DESC = [6, 5, 4, 3, 2, 1]; // 6ª (grave) arriba (default)
+  const STRING_ORDER_ASC = [1, 2, 3, 4, 5, 6];  // 6ª (grave) abajo (1ª aguda arriba)
 
   // Opciones de notas para el selector interactivo de afinación
   const TUNING_NOTE_OPTIONS = {
@@ -230,7 +231,8 @@ $(function () {
     selectedChordIndex: 0, // 0..6
     selectedIntervals: ['1', '3', '5'], // Default: 1, 3, 5 independientes
     badgeContent: 'note',  // 'note' | 'interval'
-    stringsTuning: JSON.parse(JSON.stringify(DEFAULT_STRINGS_TUNING))
+    stringsTuning: JSON.parse(JSON.stringify(DEFAULT_STRINGS_TUNING)),
+    stringOrder: 'desc'    // 'desc': 6ª arriba (default) | 'asc': 6ª abajo
   };
 
   // Cargar estado guardado o usar el default
@@ -272,6 +274,10 @@ $(function () {
               st.semitone = NOTE_SEMITONES[st.rootNote] !== undefined ? NOTE_SEMITONES[st.rootNote] : 0;
             }
           });
+        }
+        // Validar orden de cuerdas
+        if (!parsed.stringOrder || (parsed.stringOrder !== 'desc' && parsed.stringOrder !== 'asc')) {
+          parsed.stringOrder = 'desc';
         }
         return Object.assign({}, defaultState, parsed);
       }
@@ -449,8 +455,23 @@ $(function () {
     }
 
     // 1. Fila de números de trastes
+    const is6OnTop = (appState.stringOrder !== 'asc');
+    const orderIconSvg = is6OnTop
+      ? `<svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M8 15a.5.5 0 0 0 .5-.5V2.707l3.146 3.147a.5.5 0 0 0 .708-.708l-4-4a.5.5 0 0 0-.708 0l-4 4a.5.5 0 1 0 .708.708L7.5 2.707V14.5a.5.5 0 0 0 .5.5z"/></svg>`
+      : `<svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M8 1a.5.5 0 0 0-.5.5v11.793l-3.146-3.147a.5.5 0 0 0-.708.708l4 4a.5.5 0 0 0 .708 0l4-4a.5.5 0 0 0-.708-.708L8.5 13.293V1.5A.5.5 0 0 0 8 1z"/></svg>`;
+    const orderTooltip = is6OnTop
+      ? '6ª cuerda arriba (Clic para invertir: 6ª cuerda abajo)'
+      : '6ª cuerda abajo (Clic para invertir: 6ª cuerda arriba)';
+
     let numbersRowHtml = '<div class="fret-numbers-row">';
-    numbersRowHtml += '<div class="fret-number-col tuning-header-col">Afinación</div>';
+    numbersRowHtml += `
+      <div class="fret-number-col tuning-header-col">
+        <span class="tuning-header-title">Afinación</span>
+        <button type="button" id="btnToggleStringOrder" class="btn-toggle-order" title="${orderTooltip}" aria-label="${orderTooltip}">
+          ${orderIconSvg}
+        </button>
+      </div>
+    `;
     for (let f = 0; f <= TOTAL_FRETS; f++) {
       const colClass = (f === 0) ? 'fret-number-col fret-0-header' : 'fret-number-col';
       const label = (f === 0) ? 'Nut (0)' : f;
@@ -477,8 +498,9 @@ $(function () {
     boardHtml += '</div>';
 
     // 2.2 Filas de cuerdas:
-    // La cuerda más grave (6) arriba, hasta la más aguda (1) abajo.
-    STRING_ORDER.forEach(s => {
+    // Determinar orden según configuración (6ª arriba o 6ª abajo)
+    const activeStringOrder = (appState.stringOrder === 'asc') ? STRING_ORDER_ASC : STRING_ORDER_DESC;
+    activeStringOrder.forEach(s => {
       const stringObj = appState.stringsTuning.find(item => item.stringNumber === s);
       const defaultStrObj = DEFAULT_STRINGS_TUNING.find(item => item.stringNumber === s);
       const isCustomTuning = defaultStrObj && stringObj.rootNote !== defaultStrObj.rootNote;
@@ -823,6 +845,19 @@ $(function () {
     saveState();
     initControls();
     renderFretboard();
+  });
+
+  // Alternar orden de cuerdas (6ª arriba vs 6ª abajo)
+  $('#fretboardCanvas').on('click', '#btnToggleStringOrder', function (e) {
+    e.stopPropagation();
+    appState.stringOrder = (appState.stringOrder === 'asc') ? 'desc' : 'asc';
+    saveState();
+    renderFretboard();
+  });
+
+  // Evitar que doble clic en el botón de orden interfiera con otros handlers
+  $('#fretboardCanvas').on('dblclick', '#btnToggleStringOrder', function (e) {
+    e.stopPropagation();
   });
 
   // Inicialización de la aplicación
