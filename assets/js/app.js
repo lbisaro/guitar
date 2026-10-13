@@ -76,12 +76,14 @@ $(function () {
       const semi9 = (intervals[(i + 1) % 7] - intervals[i] + 12) % 12;
 
       let triad = '';
+      let isMajor = false;
       let isMinor = false;
       let isDim = false;
       let isAug = false;
 
       if (semi3 === 4 && semi5 === 7) {
-        triad = 'Maj';
+        triad = ''; // Tríada mayor sin sufijo
+        isMajor = true;
       } else if (semi3 === 3 && semi5 === 7) {
         triad = 'm';
         isMinor = true;
@@ -102,12 +104,11 @@ $(function () {
 
       // Tétrada (7ma)
       let tetrad = '';
-      if (triad === 'Maj') {
+      if (isMajor) {
         if (semi7 === 11) {
           tetrad = 'maj7';
         } else if (semi7 === 10) {
           tetrad = '7'; // Dominante (V)
-          triad = '';
         }
       } else if (triad === 'm') {
         tetrad = (semi7 === 10) ? 'm7' : (semi7 === 11 ? 'mMaj7' : 'm7');

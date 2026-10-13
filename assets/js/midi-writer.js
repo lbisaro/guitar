@@ -112,36 +112,10 @@ const MidiWriter = (function () {
 
     serializeEvents(drumEvents, scheduledDrums);
 
-    // --- PISTA 2: Bajo (Canal 1 -> index 0x00, Patch 33 = Electric Bass finger o 32 Acoustic) ---
-    const bassEvents = [];
-    const bassChannel = 0x00; // Canal 1
-    // Program change: C0 21 (Patch 33 Electric Bass Finger, 0-indexed: 33)
-    bassEvents.push(...writeVarInt(0));
-    bassEvents.push(0xC0 | bassChannel, 33);
-
-    const scheduledBass = [];
-    let currentBassTick = 0;
-
-    chords.forEach(chord => {
-      const beats = chord.durationBeats || 4;
-      const durationTicks = Math.round(beats * ticksPerBeat * 0.95); // 95% para ligar musicalmente
-      // Tónica del bajo en octava 2 (entre 36 y 47)
-      let bassNote = chord.rootMidi;
-      while (bassNote > 47) bassNote -= 12;
-      while (bassNote < 36) bassNote += 12;
-
-      scheduledBass.push({ tick: currentBassTick, status: 0x90 | bassChannel, note: bassNote, vel: 90 });
-      scheduledBass.push({ tick: currentBassTick + durationTicks, status: 0x80 | bassChannel, note: bassNote, vel: 0 });
-
-      currentBassTick += beats * ticksPerBeat;
-    });
-
-    serializeEvents(bassEvents, scheduledBass);
-
-    // --- PISTA 3: Piano Acústico (Canal 2 -> index 0x01, Patch 0 = Acoustic Grand Piano) ---
+    // --- PISTA 2: Piano Acústico (Canal 1 -> index 0x00, Patch 0 = Acoustic Grand Piano) ---
     const pianoEvents = [];
-    const pianoChannel = 0x01; // Canal 2
-    // Program change: C1 00 (Patch 0 Acoustic Grand Piano, 0-indexed: 0)
+    const pianoChannel = 0x00; // Canal 1
+    // Program change: C0 00 (Patch 0 Acoustic Grand Piano, 0-indexed: 0)
     pianoEvents.push(...writeVarInt(0));
     pianoEvents.push(0xC0 | pianoChannel, 0);
 
@@ -152,7 +126,7 @@ const MidiWriter = (function () {
       const beats = chord.durationBeats || 4;
       const durationTicks = Math.round(beats * ticksPerBeat * 0.94); // 94% de duración de compás
 
-      // Notas del piano en registro medio armónico (octavas 3 y 4, entre 48 y 76)
+      // Notas del piano en registro armónico (octavas 3 y 4, entre 48 y 76)
       const chordNotes = chord.notesMidi || [chord.rootMidi];
       chordNotes.forEach(note => {
         let pianoNote = note;
@@ -172,7 +146,6 @@ const MidiWriter = (function () {
     const tracks = [
       buildTrackChunk(track0Events),
       buildTrackChunk(drumEvents),
-      buildTrackChunk(bassEvents),
       buildTrackChunk(pianoEvents)
     ];
 

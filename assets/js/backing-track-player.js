@@ -286,13 +286,7 @@ const BackingTrackPlayer = (function () {
       }
     }
 
-    // 2. Programar Bajo
-    let bassMidi = chord.rootMidi;
-    while (bassMidi > 47) bassMidi -= 12;
-    while (bassMidi < 36) bassMidi += 12;
-    playBassNote(ctx, bassMidi, measureStartTime, measureDuration * 0.95);
-
-    // 3. Programar Piano Acústico
+    // 2. Programar Piano Acústico
     const chordNotes = (chord.notesMidi || [chord.rootMidi]).map(n => {
       let g = n;
       while (g < 48) g += 12;
